@@ -8,53 +8,49 @@
 import UIKit
 
 protocol GameDelegate: AnyObject {
-    func didEndGame(questionNumber: Int, howMuchTrue: Int, howMuchFalse: Int)
+    func didEndGame(howMuchTrue: Int, howMuchFalse: Int)
 }
 
 class QuestionsViewController: UIViewController {
     
+    @IBOutlet weak var questionNumberStackView: UIStackView!
+    @IBOutlet weak var questionNumberLable: UILabel!
+    @IBOutlet weak var howMuchQuastionsLable: UILabel!
     @IBOutlet weak var questionLable: UILabel!
     @IBOutlet weak var stackView: UIStackView!
     
     weak var gameDelegate: GameDelegate?
     
-    private var questions = QuestionDB.shared.allQuestions
-    private var questionNumber = 0
-    private var howMuchTrue = 0
-    private var howMuchFalse = 0
+    var game: GameSession?
     
+    private let orderOfQuestions: OrderOfQuestions = Game.shared.orderOfQuestions
+    
+    private lazy var createQuestionsStrategy: CreateQuestionsStrategy = {
+        switch self.orderOfQuestions {
+        case .straight:
+            return CreateStraightQuestionStrategy()
+        case .random:
+            return CreateRandonQuestionStrategy()
+        }
+    }()
+
     override func viewDidLoad() {
         super.viewDidLoad()
+        guard let game = game else { return }
+        howMuchQuastionsLable.text = "/ \(game.questions.count)"
+        game.questions = createQuestionsStrategy.createQuestions(for: game.questions)
+        game.questionNumber.addObserver(self, options: [.new, .initial], closure: { [weak self] (questionNumber, _) in
+            self?.questionNumberLable.text = "\(questionNumber + 1)"
+        })
         createViews()
     }
     
-    private func createViews() {
-        if questionNumber < questions.count {
-            questionLable.text = questions[questionNumber].question
-            createButtons(answers: questions[questionNumber].answers)
-        } else {
-            winnerAnimation()
-        }
-    }
-    
-    private func createButtons(answers: [Answer]) {
-        for answer in answers {
-            let button = UIButton()
-            button.setTitle(answer.answer, for: .normal)
-            button.setTitleColor(UIColor.black, for: .normal)
-            button.setCorner(radius: 24)
-            button.backgroundColor = UIColor.systemGray5
-            button.translatesAutoresizingMaskIntoConstraints = false
-            button.addTarget(self, action: #selector(pressedAction(_:)), for: .touchUpInside)
-            stackView.addArrangedSubview(button)
-        }
-    }
-    
     @objc func pressedAction(_ sender: UIButton) {
-        let correctAnsver = questions[questionNumber].correctAnswer
+        guard let game = game else { return }
+        let correctAnsver = game.questions[game.questionNumber.value].correctAnswer
         if sender.currentTitle == correctAnsver {
-            questionNumber += 1
-            howMuchTrue += 1
+            game.questionNumber.value += 1
+            game.howMuchTrue += 1
             UIView.animate(withDuration: 0.7, delay: 0, options: .curveLinear) {
                 sender.backgroundColor = .systemGreen
             } completion: { _ in
@@ -77,16 +73,44 @@ class QuestionsViewController: UIViewController {
         }
     }
     
+    private func createViews() {
+        guard let game = game else { return }
+        if game.questionNumber.value < game.questions.count {
+            questionLable.text = game.questions[game.questionNumber.value].question
+            createButtons(answers: game.questions[game.questionNumber.value].answers)
+        } else {
+            winnerAnimation()
+        }
+    }
+    
+    private func createButtons(answers: [Answer]) {
+        for answer in answers {
+            DispatchQueue.main.async {
+                let button = UIButton()
+                button.setTitle(answer.answer, for: .normal)
+                button.setTitleColor(UIColor.black, for: .normal)
+                button.setCorner(radius: 24)
+                button.backgroundColor = UIColor.systemGray5
+                button.translatesAutoresizingMaskIntoConstraints = false
+                button.addTarget(self, action: #selector(self.pressedAction(_:)), for: .touchUpInside)
+                self.stackView.addArrangedSubview(button)
+            }
+        }
+    }
+    
     private func calculateFalse() {
-        howMuchFalse = questions.count - howMuchTrue
+        guard let game = game else { return }
+        game.howMuchFalse = game.questions.count - game.howMuchTrue
     }
     
     private func gameFinished() {
-        gameDelegate?.didEndGame(questionNumber: questions.count, howMuchTrue: howMuchTrue, howMuchFalse: howMuchFalse)
+        guard let game = game else { return }
+        gameDelegate?.didEndGame(howMuchTrue: game.howMuchTrue, howMuchFalse: game.howMuchFalse)
     }
     
     private func winnerAnimation() {
         stackView.isHidden = true
+        questionNumberStackView.isHidden = true
         questionLable.text = "Победа!"
         questionLable.textColor = .systemRed
         UIView.animate(withDuration: 5, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0, options: [.curveEaseIn]) {

@@ -7,8 +7,6 @@
 
 import Foundation
 
-struct Answer {
-    
+struct Answer: Codable {
     let answer: String
-    
 }

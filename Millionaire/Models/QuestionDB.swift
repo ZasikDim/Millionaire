@@ -7,14 +7,20 @@
 
 import Foundation
 
-struct QuestionDB {
+class QuestionDB {
     
-    static let shared = QuestionDB()
+    private var defaulQuestions: [Question]
     
-    var allQuestions: [Question]
+    private let resultsCaretaker = AddQuestionMomento()
+
+    private(set) var userQuestions: [Question] {
+        didSet {
+            resultsCaretaker.save(questions: self.userQuestions)
+        }
+    }
     
-    private init() {
-        allQuestions = [Question(question: "Каким был первый полнометражный анимационный фильм?",
+    init() {
+        defaulQuestions = [Question(question: "Каким был первый полнометражный анимационный фильм?",
                                  answers: [Answer(answer: "Покахонтас"),
                                           Answer(answer: "Белоснежка и семь гномов"),
                                           Answer(answer: "Русалочка"),
@@ -46,6 +52,15 @@ struct QuestionDB {
                                                           Answer(answer: "Дж. К. Роулинг")],
                                                  correctAnswer: "Джордж Р. Р. Мартин"),
         ]
+        userQuestions = resultsCaretaker.loadQuestion()
+    }
+    
+    func getQuestions() -> [Question] {
+        return userQuestions + defaulQuestions
+    }
+    
+    func addQuestion(_ question: Question) {
+        userQuestions.append(question)
     }
     
 }

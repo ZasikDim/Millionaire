@@ -1,35 +1,33 @@
 //
-//  Momento.swift
+//  AddQuestionMomento.swift
 //  Millionaire
 //
-//  Created by Dmitry Zasenko on 01.12.21.
+//  Created by Dmitry Zasenko on 07.12.21.
 //
 
 import Foundation
 
-typealias Memento = Data
-
-final class Momento {
+final class AddQuestionMomento {
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
     
-    private let key = "results"
+    private let key = "question"
     
-    func save(results: [Result]) {
+    func save(questions: [Question]) {
         do {
-            let data = try self.encoder.encode(results)
+            let data = try self.encoder.encode(questions)
             UserDefaults.standard.set(data, forKey: key)
         } catch {
             print(error)
         }
     }
     
-    func loadResults() -> [Result] {
+    func loadQuestion() -> [Question] {
         guard let data = UserDefaults.standard.data(forKey: key) else {
             return []
         }
         do {
-            return try self.decoder.decode([Result].self, from: data)
+            return try self.decoder.decode([Question].self, from: data)
         } catch {
             debugPrint(error)
             return []

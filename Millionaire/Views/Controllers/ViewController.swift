@@ -26,6 +26,11 @@ class ViewController: UIViewController {
         case "startSegue":
             if let destination = segue.destination as? QuestionsViewController {
                 destination.gameDelegate = self
+                
+                let questions = QuestionDB().getQuestions()
+                session = GameSession(questions: questions)
+                Game.shared.session = session
+                destination.game = session
             }
         default:
             break
@@ -36,8 +41,6 @@ class ViewController: UIViewController {
     }
     
     @IBAction func startGame(_ sender: UIButton) {
-        session = GameSession()
-        Game.shared.session = session
     }
     
     private func startAnimation() {
@@ -50,11 +53,9 @@ class ViewController: UIViewController {
 }
 
 extension ViewController: GameDelegate{
-    func didEndGame(questionNumber: Int, howMuchTrue: Int, howMuchFalse: Int) {
-        session?.questionNumber = questionNumber
+    func didEndGame(howMuchTrue: Int, howMuchFalse: Int) {
         session?.howMuchTrue = howMuchTrue
         session?.howMuchFalse = howMuchFalse
         Game.shared.getResult()
-
     }
 }

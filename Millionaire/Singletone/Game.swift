@@ -12,6 +12,7 @@ final class Game {
     static let shared = Game()
     
     var session: GameSession?
+    var orderOfQuestions: OrderOfQuestions = .straight
     
     private let resultsCaretaker = Momento()
     private(set) var results: [Result] {
@@ -26,7 +27,7 @@ final class Game {
     
     func getResult() {
         if let session = session {
-            let score = Int((session.howMuchTrue * 100) / session.questionNumber)
+            let score = Int((session.howMuchTrue * 100) / session.questions.count)
             let result = Result(date: Date(), score: score)
             addResult(result)
             self.session = nil
